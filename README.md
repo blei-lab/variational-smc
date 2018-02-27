@@ -1,1 +1,3 @@
 # Variational Sequential Monte Carlo
+
+Under construction...
