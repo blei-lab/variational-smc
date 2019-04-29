@@ -3,9 +3,9 @@ from __future__ import print_function
 
 import autograd.numpy as np
 from autograd import grad
-from autograd.core import nograd_primitive
+from autograd.extend import notrace_primitive
 
-@nograd_primitive
+@notrace_primitive
 def resampling(w, rs):
     """
     Stratified resampling with "nograd_primitive" to ensure autograd 

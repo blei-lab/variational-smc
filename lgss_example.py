@@ -4,7 +4,7 @@ sys.path.append('./')
 import autograd.numpy as np
 import autograd.numpy.random as npr
 from autograd import grad
-from autograd.optimizers import adam
+from autograd.misc.optimizers import adam
 from variational_smc import *
 
 def init_model_params(Dx, Dy, alpha, r, obs, rs = npr.RandomState(0)):
@@ -52,6 +52,7 @@ def generate_data(model_params, T = 5, rs = npr.RandomState(0)):
 def log_marginal_likelihood(model_params, T, y_true):
     mu0, Sigma0, A, Q, C, R = model_params
     Dx = mu0.shape[0]
+    Dy = R.shape[1]
     
     log_likelihood = 0.
     xfilt = np.zeros(Dx)
@@ -73,7 +74,7 @@ def log_marginal_likelihood(model_params, T, y_true):
         Pfilt = Ppred - np.dot(K,np.dot(C,Ppred))
 
         sign, logdet = np.linalg.slogdet(S)
-        log_likelihood += -0.5*(np.sum(yt*np.linalg.solve(S,yt))+logdet+Dx*np.log(2.*np.pi))
+        log_likelihood += -0.5*(np.sum(yt*np.linalg.solve(S,yt)) + logdet + Dy*np.log(2.*np.pi))
         
     return log_likelihood
 
@@ -88,8 +89,9 @@ class lgss_smc:
         self.N = N
         
     def log_normal(self, x, mu, Sigma):
+        dim = Sigma.shape[0]
         sign, logdet = np.linalg.slogdet(Sigma)
-        log_norm = -0.5*self.Dx*np.log(2.*np.pi) - 0.5*logdet
+        log_norm = -0.5*dim*np.log(2.*np.pi) - 0.5*logdet
         Prec = np.linalg.inv(Sigma)
         return log_norm - 0.5*np.sum((x-mu)*np.dot(Prec,(x-mu).T).T,axis=1)
     
@@ -137,7 +139,7 @@ if __name__ == '__main__':
     Dx = 5
     Dy = 3
     alpha = 0.42
-    r = 0.1
+    r = .1
     obs = 'sparse'
     
     # Training parameters
@@ -181,10 +183,6 @@ if __name__ == '__main__':
             model_params, prop_params = combined_params
             bound = -objective(combined_params, iter)
             message = "{:15}|{:20}".format(iter, bound)
-            
-            if iter % 100 == 0:
-                np.save(f_head+'_model.npy', model_params)
-                np.save(f_head+'_proposal.npy', prop_params)
             
             with open(f_head+'_ELBO.csv', 'a') as f_handle:
                 np.savetxt(f_handle, [[iter,bound]], fmt='%i,%f')
